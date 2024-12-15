@@ -4,7 +4,7 @@ from .models import Movement, Member, Category, Distribution_type, Salary, Perio
 class MovementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movement
-        fields = ['id', 'amount', 'date', 'member', 'category']
+        fields = ['id', 'amount', 'date', 'member', 'category', 'period']
 
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:

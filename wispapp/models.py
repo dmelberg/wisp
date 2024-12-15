@@ -14,7 +14,7 @@ class Distribution_type(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    distribution_type = models.ForeignKey(Distribution_type, on_delete=models.CASCADE, default=0)
+    distribution_type = models.ForeignKey(Distribution_type, on_delete=models.CASCADE, default=1)
 
     def __str__(self):
         return f'{self.name} ({self.distribution_type})'
@@ -30,7 +30,7 @@ class Movement(models.Model):
     date = models.DateField()
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    period = models.ForeignKey(Period, on_delete=models.CASCADE)
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, default=0)
 
     def __str__(self):
         return f'{self.member} - {self.amount}'
