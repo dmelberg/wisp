@@ -37,8 +37,8 @@ class Movement(models.Model):
 
 class Salary(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField()
+    period = models.ForeignKey(Period, on_delete=models.CASCADE, default=0)
     member = models.ForeignKey(Member, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'Salary for {self.member} on {self.date}'
+        return f'Salary for {self.member} during {self.period}'
