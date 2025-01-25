@@ -3,12 +3,22 @@ from .models import Movement, Member, Category, Distribution_type, Salary, Perio
 from django.db.models import Sum
 from datetime import datetime, timedelta
 
+class MemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Member
+        fields = ['id', 'name']
 class MovementSerializer(serializers.ModelSerializer):
     period = serializers.PrimaryKeyRelatedField(read_only=True)
     proportionalAmount = serializers.SerializerMethodField()
+    member = MemberSerializer(read_only=True)
+    member_id = serializers.PrimaryKeyRelatedField(
+        queryset=Member.objects.all(), 
+        source='member', 
+        write_only=True
+    )
     class Meta:
         model = Movement
-        fields = ['id', 'amount', 'date', 'member', 'category', 'period', 'proportionalAmount']
+        fields = ['id', 'amount', 'date', 'member', 'member_id', 'category', 'period', 'proportionalAmount']
 
     def create(self, validated_data):
         #Checks if period exists, otherwise creates it
@@ -57,11 +67,6 @@ class MovementSerializer(serializers.ModelSerializer):
             })
         
         return proportional_data
-
-class MemberSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Member
-        fields = ['id', 'name']
 
 class DistributionTypeSerializer(serializers.ModelSerializer):
     class Meta:
