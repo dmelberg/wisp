@@ -7,11 +7,11 @@ from rest_framework_simplejwt.views import (
 )
 
 router = DefaultRouter()
-router.register(r'movements', MovementViewSet)
-router.register(r'members', MemberViewSet)
+router.register(r'movements', MovementViewSet, basename='movement')
+router.register(r'members', MemberViewSet, basename='member')
 router.register(r'categories', CategoryViewSet)
 router.register(r'distribution-types', DistributionTypeViewSet)
-router.register(r'salary', SalaryViewSet)
+router.register(r'salaries', SalaryViewSet, basename='salary')
 router.register(r'periods', PeriodViewSet)
 
 urlpatterns = [
