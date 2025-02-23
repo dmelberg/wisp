@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Movement, Member, Category, Distribution_type, Salary, Period
 from django.db.models import Sum
 from datetime import datetime, timedelta
+from django.contrib.auth.models import User
 
 class MemberSerializer(serializers.ModelSerializer):
     class Meta:
@@ -89,3 +90,14 @@ class PeriodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Period
         fields = ['id', 'period']
+
+class UserSerializer(serializers.ModelSerializer):
+        password = serializers.CharField(write_only=True)
+
+        class Meta:
+            model = User
+            fields = ('username', 'password', 'email')
+
+        def create(self, validated_data):
+            user = User.objects.create_user(**validated_data)
+            return user
