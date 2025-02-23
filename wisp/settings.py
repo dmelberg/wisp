@@ -51,14 +51,22 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "wispapp",
     "rest_framework",
-    'django_filters'
+    'django_filters',
+    'rest_framework_simplejwt'
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+            'rest_framework_simplejwt.authentication.JWTAuthentication',
+        )
 }
 
 ROOT_URLCONF = "wisp.urls"
+
+SIMPLE_JWT = {
+        'AUTH_HEADER_TYPES': ('Bearer',),
+    }
 
 TEMPLATES = [
     {
