@@ -52,11 +52,11 @@ class PeriodViewSet(viewsets.ModelViewSet):
 class UserCreate(generics.CreateAPIView):
     serializer_class = UserSerializer
 
-    def post(self, request, *args, **kwargs): #use post method to access request data.
-        serializer = self.get_serializer(data=request.data) #create an instance of the serializer.
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
 
-        if serializer.is_valid(): #validate the data
-            serializer.save() #save the data.
+        if serializer.is_valid():
+            user = serializer.save()  # Capture the returned user
             Member.objects.create(user=user, name=user.username)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
