@@ -19,7 +19,7 @@ Movement categories, they have a distribution type.
 
 ## Members
 
-Members can register movements and have salaries.
+Members can register movements and have salaries. Currently a member can belong to only one household, since they have a direct relation to the household.
 
 ## Distribution Types
 

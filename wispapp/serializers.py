@@ -1,32 +1,76 @@
 from rest_framework import serializers
-from .models import Movement, Member, Category, Distribution_type, Salary, Period
+from .models import Movement, Member, Category, Distribution_type, Salary, Period, Household
 from django.db.models import Sum
 from datetime import datetime, timedelta
 from django.contrib.auth.models import User
 
+class HouseholdSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Household
+        fields = ['id', 'name']
+
 class MemberSerializer(serializers.ModelSerializer):
+    household = HouseholdSerializer(read_only=True)
+
     class Meta:
         model = Member
+        fields = ['id', 'name', 'household']
+
+class DistributionTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Distribution_type
         fields = ['id', 'name']
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'household', 'created_at', 'updated_at']
+        read_only_fields = ['household', 'created_at', 'updated_at']
+
+class SalarySerializer(serializers.ModelSerializer):
+    class Meta: 
+        model = Salary
+        fields = ['id', 'amount', 'period', 'member']
+
+class PeriodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Period
+        fields = ['id', 'period']
+
 class MovementSerializer(serializers.ModelSerializer):
     period = serializers.PrimaryKeyRelatedField(read_only=True)
     proportionalAmount = serializers.SerializerMethodField()
     member = MemberSerializer(read_only=True)
-    member_id = serializers.PrimaryKeyRelatedField(
-        queryset=Member.objects.all(), 
-        source='member', 
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        source='category',
         write_only=True
     )
+
     class Meta:
         model = Movement
-        fields = ['id', 'amount', 'date', 'member', 'member_id', 'category', 'period', 'proportionalAmount']
+        fields = ['id', 'amount', 'date', 'member', 'category', 'category_id', 'description', 'period', 'proportionalAmount', 'created_at', 'updated_at']
+        read_only_fields = ['member', 'created_at', 'updated_at']
 
     def create(self, validated_data):
+        # Get the current user's member instance
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            member = Member.objects.get(user=request.user)
+            validated_data['member'] = member
+
         #Checks if period exists, otherwise creates it
         movement_date = validated_data.get('date')
         period_str = movement_date.strftime('%Y-%m')
         period, created = Period.objects.get_or_create(period=period_str)
         validated_data['period'] = period
+
+        # Handle description (can be null)
+        description = validated_data.get('description')
+        if description is not None and description.strip() == '':
+            validated_data['description'] = None
+
         return super().create(validated_data)
     
     def get_proportionalAmount(self, movement):
@@ -69,35 +113,13 @@ class MovementSerializer(serializers.ModelSerializer):
         
         return proportional_data
 
-class DistributionTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Distribution_type
-        fields = ['id', 'name']
-
-class CategorySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'distribution_type']
-
-class SalarySerializer(serializers.ModelSerializer):
-    
-    class Meta: 
-        model = Salary
-        fields = ['id', 'amount', 'period', 'member']
-
-class PeriodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Period
-        fields = ['id', 'period']
-
 class UserSerializer(serializers.ModelSerializer):
-        password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True)
 
-        class Meta:
-            model = User
-            fields = ('username', 'password', 'email')
+    class Meta:
+        model = User
+        fields = ('username', 'password', 'email')
 
-        def create(self, validated_data):
-            user = User.objects.create_user(**validated_data)
-            return user
+    def create(self, validated_data):
+        user = User.objects.create_user(**validated_data)
+        return user

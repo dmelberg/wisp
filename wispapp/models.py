@@ -10,7 +10,8 @@ class Household(models.Model):
 
 class Member(models.Model):
     name = models.CharField(max_length=100)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    household = models.ForeignKey(Household, on_delete=models.SET_NULL, null=True, blank=True, related_name='member_household')
 
     def __str__(self):
         return self.name
@@ -23,10 +24,17 @@ class Distribution_type(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name='categories')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     distribution_type = models.ForeignKey(Distribution_type, on_delete=models.CASCADE, default=1)
 
+    class Meta:
+        verbose_name_plural = "Categories"
+        unique_together = ['name', 'household']
+
     def __str__(self):
-        return f'{self.name} ({self.distribution_type})'
+        return f"{self.name} ({self.household.name})"
 
 class Period(models.Model):
     period = models.CharField(max_length=100)
@@ -37,12 +45,15 @@ class Period(models.Model):
 class Movement(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     date = models.DateField()
-    member = models.ForeignKey(Member, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE, related_name='movements')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='movements')
+    description = models.TextField(blank=True, null=True)
     period = models.ForeignKey(Period, on_delete=models.CASCADE, default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.member} - {self.amount}'
+        return f"{self.member.name} - ${self.amount} - {self.category.name}"
 
 class Salary(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
