@@ -22,20 +22,49 @@ class DistributionTypeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 class CategorySerializer(serializers.ModelSerializer):
+    distribution_type = DistributionTypeSerializer(read_only=True)
+
     class Meta:
         model = Category
-        fields = ['id', 'name', 'household', 'created_at', 'updated_at']
+        fields = ['id', 'name', 'household', 'distribution_type', 'created_at', 'updated_at']
         read_only_fields = ['household', 'created_at', 'updated_at']
-
-class SalarySerializer(serializers.ModelSerializer):
-    class Meta: 
-        model = Salary
-        fields = ['id', 'amount', 'period', 'member']
 
 class PeriodSerializer(serializers.ModelSerializer):
     class Meta:
         model = Period
         fields = ['id', 'period']
+
+class SalarySerializer(serializers.ModelSerializer):
+    period = PeriodSerializer(read_only=True)
+    member = MemberSerializer(read_only=True)
+    period_id = serializers.PrimaryKeyRelatedField(
+        queryset=Period.objects.all(),
+        source='period',
+        write_only=True
+    )
+    member_id = serializers.PrimaryKeyRelatedField(
+        queryset=Member.objects.all(),
+        source='member',
+        write_only=True
+    )
+
+    class Meta: 
+        model = Salary
+        fields = ['id', 'amount', 'period', 'member', 'period_id', 'member_id']
+
+    def create(self, validated_data):
+        # Get the current user's member instance to verify household access
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            current_member = Member.objects.get(user=request.user)
+            member = validated_data.get('member')
+            
+            # Verify that the member belongs to the same household
+            if member.household != current_member.household:
+                raise serializers.ValidationError("You can only create salaries for members in your household")
+            
+            return super().create(validated_data)
+        return super().create(validated_data)
 
 class MovementSerializer(serializers.ModelSerializer):
     period = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -118,7 +147,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('username', 'password', 'email')
+        fields = ('id', 'username', 'email', 'password')
+        read_only_fields = ('id',)
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)

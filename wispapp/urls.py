@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     MovementViewSet, MemberViewSet, CategoryViewSet, DistributionTypeViewSet,
-    SalaryViewSet, PeriodViewSet, UserCreate, HouseholdViewSet, JoinHouseholdView
+    SalaryViewSet, PeriodViewSet, UserCreate, HouseholdViewSet, JoinHouseholdView, UserViewSet
 )
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -17,6 +17,7 @@ router.register(r'distribution-types', DistributionTypeViewSet)
 router.register(r'salaries', SalaryViewSet, basename='salary')
 router.register(r'periods', PeriodViewSet)
 router.register(r'households', HouseholdViewSet, basename='household')
+router.register(r'users', UserViewSet)
 
 urlpatterns = [
     path('register/', UserCreate.as_view(), name='user_register'),
