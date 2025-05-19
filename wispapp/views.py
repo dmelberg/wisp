@@ -3,11 +3,12 @@ from rest_framework import viewsets, generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
-from .models import Movement, Member, Category, Distribution_type, Salary, Period, Household
+from .models import Movement, Member, Category, Distribution_type, Salary, Period, Household, MovementDistribution
 from .serializers import MovementSerializer, MemberSerializer, CategorySerializer, DistributionTypeSerializer, SalarySerializer, PeriodSerializer, UserSerializer, HouseholdSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.contrib.auth.models import User
 from rest_framework.exceptions import ValidationError
+from django.db.models import Sum
 
 class MovementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
@@ -39,6 +40,50 @@ class MemberViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         except Member.DoesNotExist:
             return Response({'error': 'Member not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    @action(detail=False, methods=['get'])
+    def detailed_balances(self, request):
+        try:
+            current_member = request.user.member
+            if not current_member.household:
+                return Response({'error': 'No household found'}, status=status.HTTP_404_NOT_FOUND)
+
+            # Get all members in the household
+            household_members = Member.objects.filter(household=current_member.household)
+            
+            # Calculate detailed balances
+            detailed_balances = []
+            for member in household_members:
+                if member.id == current_member.id:
+                    continue
+
+                # Calculate how much the current member owes this member
+                owed_to_member = MovementDistribution.objects.filter(
+                    movement__member=member,
+                    member=current_member,
+                    is_payer=False
+                ).aggregate(total=Sum('amount'))['total'] or 0
+
+                # Calculate how much this member owes the current member
+                member_owes = MovementDistribution.objects.filter(
+                    movement__member=current_member,
+                    member=member,
+                    is_payer=False
+                ).aggregate(total=Sum('amount'))['total'] or 0
+
+                detailed_balances.append({
+                    'member': {
+                        'id': member.id,
+                        'name': member.name
+                    },
+                    'you_owe': float(owed_to_member),
+                    'owes_you': float(member_owes),
+                    'net_balance': float(member_owes - owed_to_member)
+                })
+
+            return Response(detailed_balances)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
