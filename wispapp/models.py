@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models import Sum
 
 class Household(models.Model):
     name = models.CharField(max_length=255)
@@ -15,6 +16,25 @@ class Member(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def total_owed(self):
+        """Sum of all movement distributions where this member is responsible for a share"""
+        return MovementDistribution.objects.filter(
+            member=self
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+    @property
+    def total_paid(self):
+        """Sum of all movements where this member was the payer"""
+        return Movement.objects.filter(
+            member=self
+        ).aggregate(total=Sum('amount'))['total'] or 0
+
+    @property
+    def balance(self):
+        """Total paid minus total owed"""
+        return self.total_paid - self.total_owed
 
 class Distribution_type(models.Model):
     name = models.CharField(max_length=100)
@@ -62,3 +82,10 @@ class Salary(models.Model):
 
     def __str__(self):
         return f'Salary for {self.member} during {self.period}'
+
+class MovementDistribution(models.Model):
+    movement = models.ForeignKey(Movement, on_delete=models.CASCADE)
+    member = models.ForeignKey(Member, on_delete=models.CASCADE)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_payer = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
